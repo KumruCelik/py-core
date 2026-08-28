@@ -162,3 +162,174 @@ bekleyen script ile anında biten script arasındaki fark.
 **Not:** Bu fark küçük veride görünmüyor. 100 elemanlı listede `list` ile `set`
 arasında hiçbir şey hissetmiyorum. Yani ölçek, kararı belirliyor — Hafta 1'de
 28 MB'lık CSV'de öğrendiğim şeyin aynısı.
+
+
+---
+
+## 11. Docstring fonksiyonun içinde olmalı
+
+```python
+ """Açıklama."""          # ← YANLIŞ: def'in üstünde
+def f(a: int) -> int:
+    return a
+```
+
+**Gerçek:** `IndentationError: unindent does not match any outer indentation level`
+
+**Neden:** Docstring, fonksiyon gövdesinin **ilk ifadesidir**. `def` satırının üstüne
+konursa Python onu bağımsız bir string ifadesi sanıyor ve girinti hesabı bozuluyor.
+
+**Kural:** `def` satırının altında, `return` ile aynı hizada (4 boşluk). Sınıflarda da
+`class` satırının altında.
+
+---
+
+## 12. `return` yanlışlıkla döngünün içinde
+
+```python
+for k in kelimeler:
+    sayac[k] = sayac.get(k, 0) + 1
+    return sayac        # ← bir girinti fazla
+```
+
+**Gerçek:** Fonksiyon ilk kelimeden sonra dönüyor, `{"a": 1}` veriyor.
+
+**Nasıl yakalandı:** mypy "Missing return statement" dedi. Mantığı: liste boşsa döngü
+hiç çalışmaz, `return`'e ulaşılmaz, fonksiyon örtük `None` döner — ama imza
+`dict[str, int]` diyor. Tip denetleyicisi bir **girinti hatasını** ortaya çıkardı.
+
+**Kural:** Testler yeşilken bile mypy'yi çalıştır; ikisi farklı hata sınıflarını yakalıyor.
+
+---
+
+## 13. Boş kap yaratıyorsan tipini yaz
+
+```python
+sonuc = {}                        # mypy: Need type annotation
+sonuc: dict[str, int] = {}        # ✓
+gorulen: set[int] = set()         # ✓
+pencere: deque[int] = deque()     # ✓
+```
+
+**Neden:** Boş kaptan tip çıkarılamaz. İlk atamayı görmeden mypy'nin hiçbir ipucu yok.
+
+**Kural:** Bu hafta dört kez karşıma çıktı. Boş `{}`, `[]`, `set()`, `deque()` yazarken
+tip açıklamasını refleks haline getir.
+
+---
+
+## 14. `__eq__` tanımlayınca sınıf hashlenemez oluyor
+
+```python
+class Vektor:
+    def __eq__(self, other: object) -> bool: ...
+    # __hash__ otomatik olarak None yapılır
+```
+
+**Gerçek:** `{Vektor(1,2)}` → `TypeError: unhashable type`
+
+**Neden:** Eşitlik tanımı değiştiyse hash tanımı da değişmeli; Python tutarsızlığı
+engellemek için `__hash__`'i düşürüyor.
+
+**Kural:** Değer nesnesi yazıyorsan `__hash__`'i de yaz (`hash((self.x, self.y))`),
+ya da `@dataclass(frozen=True)` kullan — o ikisini birlikte üretir.
+
+---
+
+## 15. `d.get(k)` ile `d[k]` tip genişliği açısından farklı
+
+```python
+max(d, key=d.get)          # mypy hatası
+max(d, key=lambda k: d[k]) # ✓
+```
+
+**Neden:** `d.get` eksik anahtarda `None` döndürebildiği için tipi
+`Callable[[str], int | None]`. `None` sıralanamaz. `d[k]` ise ya `int` döndürür ya
+`KeyError` fırlatır — tip dar kalır.
+
+**Kural:** "Güvenli" görünen `get`, dönüş tipini genişletiyor ve bu genişlik aşağı
+akıştaki her kullanımı etkiliyor. Güvenlik ücretsiz değil.
+
+---
+
+## 16. `typing.Callable` ve arkadaşları eskidi
+
+```python
+from typing import Callable, Iterable, Iterator      # eski
+from collections.abc import Callable, Iterable, Iterator  # ✓
+```
+
+**Neden:** Python 3.9'dan beri bu soyut tipler `collections.abc` altında.
+`typing` sürümleri geriye uyumluluk için duruyor.
+
+**Kural:** ruff'ın `UP` (pyupgrade) kuralları bunu otomatik yakalıyor. Aynı grup
+`Generic[T]` yerine `class Kutu[T]` ve `TypeVar` yerine `def f[T](...)` sözdizimini
+de öneriyor (Python 3.12+).
+
+---
+
+## 17. `match` bütün yolları kapatmıyorsa fonksiyon sessizce `None` dönüyor
+
+```python
+def renk_kodu(renk: Renk) -> str:
+    match renk:
+        case "kirmizi": return "#FF0000"
+        case "yesil":   return "#00FF00"
+        case "mavi":    return "#0000FF"
+    # case _ yok → örtük None
+```
+
+**Gerçek:** mypy "Missing return statement"; çalışma zamanında beklenen `KeyError`
+yerine `None`.
+
+**Kural:** İki seçenek — ya sözlük araması kullan (`d[k]` zaten `KeyError` fırlatır),
+ya `case _: assert_never(renk)` ekle. İkincisi Literal'a yeni değer eklendiğinde
+mypy'nin **derleme zamanında** uyarmasını sağlıyor.
+
+---
+
+## 18. Python Türkçe büyük/küçük harf kurallarını bilmiyor
+
+```python
+"İ".lower()   # → 'i̇'  (i + birleşen nokta: İKİ karakter)
+"I".lower()   # → 'i'   (Türkçede 'ı' olmalıydı)
+"ı".upper()   # → 'I'   (Türkçede 'I' doğru ama İ/I ayrımı kayıp)
+```
+
+**Neden:** `str.lower()` Unicode'un dil-bağımsız kurallarını uyguluyor; Türkçenin
+noktalı/noktasız i ayrımı özel bir durum.
+
+**Kural:** Türkçe metinde büyük/küçük harf normalleştirmesi yaparken sonucu doğrula.
+Karşılaştırma için elle eşleme tablosu ya da `casefold()` + özel durum gerekebilir.
+Bu hafta ünlü sayma egzersizinde sonucu bozmadı ama sessiz hata kaynağı.
+
+---
+
+## 19. `groupby` grubu tembel ve tek kullanımlık
+
+```python
+for k, g in groupby(items, key=anahtar):
+    yield k, list(g)      # list() ŞART
+```
+
+**Neden:** `groupby` grup nesnesini tembel döndürüyor ve bir sonraki gruba
+geçildiğinde önceki grup **geçersizleşiyor**. Sabitlemezsen sessizce boş gruplar alırsın.
+
+**Kural:** Tembelliğin bedeli var: tembel bir sonucu saklıyorsan önce sabitle.
+Aynı mantık generator'lar için de geçerli (madde 10).
+
+---
+
+## 20. `str.isdigit()` negatif sayıyı yakalamıyor
+
+```python
+"-5".isdigit()   # False
+```
+
+**Neden:** `isdigit` yalnızca rakam karakterlerine bakıyor; eksi işareti rakam değil.
+
+**Gerçek:** Metinden tam sayı ayıklarken negatifler sessizce düşüyor. Çözüm regex:
+`re.findall(r"-?\d+", s)` — `-?` "eksi işareti olabilir de olmayabilir de" demek.
+
+**Kural:** Karakter sınıfı kontrolleri (`isdigit`, `isalpha`, `isalnum`) tek karakter
+mantığıyla çalışıyor; sayı ayrıştırma için yetersizler.
