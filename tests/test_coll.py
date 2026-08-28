@@ -71,6 +71,11 @@ def test_ters_sozluk():
     assert ters_sozluk({}) == {}
 
 
+def test_ters_sozluk_cakisma():
+    with pytest.raises(ValueError):
+        ters_sozluk({"a": 1, "b": 1})
+
+
 def test_sozluk_birlestir():
     assert sozluk_birlestir({"a": 1, "b": 2}, {"b": 9, "c": 3}) == {"a": 1, "b": 9, "c": 3}
 
