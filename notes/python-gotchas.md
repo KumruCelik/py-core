@@ -109,3 +109,54 @@ nesneyi **değiştirmek** dışarıya yansır, adı **yeniden bağlamak** yansı
 
 **Kural:** `async`, `class`, `import`, `lambda`, `from`, `is`, `not` — hiçbiri modül/değişken adı olamaz.
 Liste: `python3 -c "import keyword; print(keyword.kwlist)"`
+
+---
+
+---
+
+## 9. Yanlış koleksiyon seçimi kodu yüzlerce kat yavaşlatıyor
+
+Kendi makinemde ölçtüm (`timeit`, N = 100.000 eleman, 1000 tekrar):
+
+| İşlem | Süre (sn) | Karşılaştırma |
+|---|---|---|
+| `lst.append(x)` | 0,000030 | — |
+| `lst.insert(0, x)` | 0,022330 | append'e göre **744× yavaş** |
+| `lst.pop()` | 0,000025 | — |
+| `lst.pop(0)` | 0,035702 | pop()'a göre **1.428× yavaş** |
+| `dq.appendleft(x)` | 0,000020 | `list.insert(0)`'a göre **1.117× hızlı** |
+| `dq.popleft()` | 0,000076 | `list.pop(0)`'a göre **470× hızlı** |
+| `x in lst` | 0,651437 | — |
+| `x in st` | 0,000027 | listeye göre **24.127× hızlı** |
+| `d[k]` | 0,000062 | — |
+
+**Neden:**
+
+Liste bellekte ardışık bir blok. Sona eklemek boş yere yazmak demek, sabit süre.
+Başa eklemek ise geri kalan 100.000 elemanın hepsini bir kaydırmak demek, doğrusal süre.
+
+`deque` çift yönlü bağlı bir yapı, iki ucunda da sabit maliyet. Bedeli ortadan
+indeksleme: `lst[5000]` listede sabit, deque'te doğrusal.
+
+`set` ve `dict` hash tablosu. Aranan değerin hash'i hesaplanıp doğrudan yerine
+gidiliyor, kaç eleman olduğu fark etmiyor. Liste ise tek tek karşılaştırıyor.
+
+**Pratikte ne demek:**
+
+Tek arama 0,65 milisaniye, küçük görünüyor. Ama 100.000 elemanlı bir listede
+100.000 arama yaparsam yaklaşık 65 saniye sürer. Aynı işi `set` ile yaparsam
+yaklaşık 3 milisaniye. Tek satırlık bir değişiklik (`lst = set(lst)`), bir dakika
+bekleyen script ile anında biten script arasındaki fark.
+
+**Kural — erişim desenine göre seç:**
+
+| Erişim deseni | Yapı |
+|---|---|
+| Sona ekle/çıkar, indeksle eriş | `list` |
+| İki uçtan da ekle/çıkar, kayan pencere | `deque` |
+| "Var mı?" sorusu, tekilleştirme | `set` |
+| Anahtar → değer eşleme, sayma | `dict` / `Counter` |
+
+**Not:** Bu fark küçük veride görünmüyor. 100 elemanlı listede `list` ile `set`
+arasında hiçbir şey hissetmiyorum. Yani ölçek, kararı belirliyor — Hafta 1'de
+28 MB'lık CSV'de öğrendiğim şeyin aynısı.
