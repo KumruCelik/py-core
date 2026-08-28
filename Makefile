@@ -8,7 +8,7 @@ test:
 	uv run pytest
 
 run:
-	uv run python -m dev_setup.main
+	uv run python -m py_core.main
 
 docker:
 	docker build -t $(shell basename $(CURDIR)) .

@@ -1,7 +1,7 @@
 [project]
-name = "dev-setup"
+name = "py-core"
 version = "0.1.0"
-description = "uv, ruff, mypy, pytest, pre-commit ve GitHub Actions ile hazır Python proje şablonu"
+description = "Bölüm 2 Python egzersizleri: koleksiyonlar, generator, decorator, OOP, typing, asyncio"
 readme = "README.md"
 authors = [
     { name = "KumruCelik", email = "celikumru13@gmail.com" }
