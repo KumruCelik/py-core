@@ -9,6 +9,3 @@ test:
 
 run:
 	uv run python -m py_core.main
-
-docker:
-	docker build -t $(shell basename $(CURDIR)) .
