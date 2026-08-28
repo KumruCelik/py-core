@@ -1,86 +1,83 @@
-# dev-setup
+# py-core
 
-[![CI](https://github.com/KumruCelik/dev-setup/actions/workflows/ci.yml/badge.svg)](https://github.com/KumruCelik/dev-setup/actions/workflows/ci.yml)
+[![CI](https://github.com/KumruCelik/py-core/actions/workflows/ci.yml/badge.svg)](https://github.com/KumruCelik/py-core/actions/workflows/ci.yml)
 
-Tüm projelerim için standart Python proje şablonu.
+Bölüm 2 (Python ve yazılım mühendisliği disiplini) egzersiz reposu.
+Yedi kategoride 80 küçük fonksiyon, her biri testle doğrulanmış.
 
 ## Problem
 
-Her yeni projede aynı araç zincirini (lint, test, format, CI) sıfırdan kurmak
-hem zaman kaybı hem de tutarsızlık kaynağı. Projeden projeye komutlar
-değişince "burada testler nasıl çalışıyordu" sorusu her seferinde geri geliyor.
+Python'u "çalışan kod yazabiliyorum" seviyesinden "neden böyle çalıştığını
+açıklayabiliyorum" seviyesine taşımak. Tutorial takip etmek yerine, her konuda
+küçük ve testli parçalar yazarak dilin davranışını ölçmek.
 
 ## Yaklaşım
 
-uv (paket yönetimi) + ruff (lint & format) + pytest (test) + pre-commit
-(commit öncesi kontrol) + GitHub Actions (CI) + multi-stage Dockerfile.
+Her egzersiz için önce test (şartname), sonra kod. Her kategori bir modül:
 
-Her repoda aynı beş komut çalışır:
+| Modül | Kategori | Egzersiz |
+|---|---|---|
+| `text.py` | String işleme | 10 |
+| `coll.py` | Koleksiyonlar | 15 |
+| `gen.py` | Generator / itertools | 10 |
+| `deco.py` | Decorator / context manager | 10 |
+| `oop.py` | OOP ve veri modelleri | 15 |
+| `typing_lab.py` | Tipler ve Protocol | 10 |
+| `async_lab.py` | asyncio | 10 |
 
-```
-make install
-make lint
-make test
-make run
-make docker
-```
+Çalışma yöntemi: örneği yaz → **çıktısını tahmin et** → çalıştır → tahmin
+yanlışsa [`notes/python-gotchas.md`](notes/python-gotchas.md)'ye ekle.
 
 ## Kullanım
 
-Bu repo GitHub'da template olarak işaretli. Yeni proje açmak için:
-
 ```
-gh repo create yeni-proje --public --template KumruCelik/dev-setup --clone
-cd yeni-proje
 uv sync --all-extras
 uv run pre-commit install
 make test
 ```
 
-Sonra `pyproject.toml` içindeki `name` alanını ve `src/dev_setup/` klasör
-adını yeni proje adıyla değiştir.
+Tek kategori üzerinde çalışırken sıkı döngü:
+
+```
+uv run pytest tests/test_gen.py -x -q --no-cov
+```
 
 ## Sonuç
 
-**Testler:**
-
 ```
-tests/test_main.py::test_normal                      PASSED
-tests/test_main.py::test_bos_liste                   PASSED
-tests/test_main.py::test_n_eleman_sayisindan_buyuk   PASSED
+90 passed
 
-3 passed in 0.04s
-```
-
-**Coverage:**
-
-```
-Name                        Stmts   Miss  Cover   Missing
----------------------------------------------------------
-src/dev_setup/__init__.py       2      1    50%   2
-src/dev_setup/main.py           6      0   100%
----------------------------------------------------------
-TOTAL                           8      1    88%
+Name                        Stmts   Miss  Cover
+------------------------------------------------
+src/py_core/async_lab.py       56      0   100%
+src/py_core/coll.py            52      0   100%
+src/py_core/deco.py            81      0   100%
+src/py_core/gen.py             45      0   100%
+src/py_core/main.py             6      0   100%
+src/py_core/oop.py            103      0   100%
+src/py_core/text.py            34      0   100%
+src/py_core/typing_lab.py      41      0   100%
+------------------------------------------------
+TOTAL                         418      0   100%
 ```
 
-**CI:** GitHub Actions'ta lint + test her push'ta çalışıyor, yeşil.
+`ruff check`, `ruff format --check` ve `mypy src` temiz.
 
-**Docker imajı:** 309 MB (multi-stage, python:3.12-slim, `--no-dev`).
-
-İmajın büyük kısmı numpy + pandas'tan geliyor (~120 MB). Multi-stage build
-temel imajı ve derleme araçlarını kırpıyor ama bağımlılıkların kendisini
-kırpamıyor — imaj çoğunlukla bağımlılıksa optimizasyonu başka yerde aramak
-gerekiyor.
+Yan çıktı: [`notes/python-gotchas.md`](notes/python-gotchas.md) — 20 madde,
+hepsi bu repoyu yazarken gerçekten karşılaşılan davranışlar.
 
 ## Neyi yapmadım / Sınırlar
 
-- `mypy` strict modda değil. Küçük projede maliyeti getirisinden fazla geldi,
-  proje büyürse açılmalı.
-- Coverage için zorunlu bir eşik yok. Coverage'ı kalite ölçüsü olarak değil,
-  "bu satır hiç çalışmamış" uyarısı olarak kullanıyorum.
-- `__init__.py`'de `uv init`'ten kalan örnek `main()` fonksiyonu duruyor ve
-  test edilmiyor — coverage'daki %88'in sebebi bu.
-- Konteyner root kullanıcısıyla çalışıyor. Üretim için non-root kullanıcı
-  tanımlanmalı.
-- Şablonu yeni projeye uyarlarken isim değişikliği elle yapılıyor. İleride
-  bunu bir script'e bağlamak gerekebilir.
+- **Testleri ben tasarlamadım.** Şartnameler bana verildi, ben gövdeleri yazdım.
+  Kendi test şartnamemi kurmak bir sonraki ödevin (mini-etl) hedefi.
+- `pytest` `fixture`, `conftest.py` ve `monkeypatch` hiç kullanılmadı.
+- `hypothesis` ile property-based test yok.
+- `mypy` tam `--strict` modda değil; `disallow_untyped_defs` dahil en değerli
+  anahtarlar tek tek açıldı, gerekçesi `pyproject.toml`'da.
+- Türkçe docstring kullanıldığı için `ruff`'ta `allowed-confusables` ile
+  Türkçe harflere izin verildi. Kod uluslararası paylaşıma açılırsa
+  docstring'ler İngilizceye çevrilmeli.
+- Şablondan (`dev-setup`) kalan `main.py` duruyor; egzersizlerle ilgisi yok
+  ama `top_n` fonksiyonu koleksiyon kategorisinin bir ön örneği sayılabilir.
+- Egzersizler küçük ve bağımsız; gerçek bir uygulama değil. Amaç dil
+  davranışını ölçmek, ürün üretmek değil.

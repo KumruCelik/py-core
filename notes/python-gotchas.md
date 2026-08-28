@@ -189,7 +189,7 @@ konursa Python onu bağımsız bir string ifadesi sanıyor ve girinti hesabı bo
 ```python
 for k in kelimeler:
     sayac[k] = sayac.get(k, 0) + 1
-    return sayac        # ← bir girinti fazla
+    return sayac  # ← bir girinti fazla
 ```
 
 **Gerçek:** Fonksiyon ilk kelimeden sonra dönüyor, `{"a": 1}` veriyor.
@@ -205,10 +205,10 @@ hiç çalışmaz, `return`'e ulaşılmaz, fonksiyon örtük `None` döner — am
 ## 13. Boş kap yaratıyorsan tipini yaz
 
 ```python
-sonuc = {}                        # mypy: Need type annotation
-sonuc: dict[str, int] = {}        # ✓
-gorulen: set[int] = set()         # ✓
-pencere: deque[int] = deque()     # ✓
+sonuc = {}  # mypy: Need type annotation
+sonuc: dict[str, int] = {}  # ✓
+gorulen: set[int] = set()  # ✓
+pencere: deque[int] = deque()  # ✓
 ```
 
 **Neden:** Boş kaptan tip çıkarılamaz. İlk atamayı görmeden mypy'nin hiçbir ipucu yok.
@@ -223,6 +223,7 @@ tip açıklamasını refleks haline getir.
 ```python
 class Vektor:
     def __eq__(self, other: object) -> bool: ...
+
     # __hash__ otomatik olarak None yapılır
 ```
 
@@ -239,8 +240,8 @@ ya da `@dataclass(frozen=True)` kullan — o ikisini birlikte üretir.
 ## 15. `d.get(k)` ile `d[k]` tip genişliği açısından farklı
 
 ```python
-max(d, key=d.get)          # mypy hatası
-max(d, key=lambda k: d[k]) # ✓
+max(d, key=d.get)  # mypy hatası
+max(d, key=lambda k: d[k])  # ✓
 ```
 
 **Neden:** `d.get` eksik anahtarda `None` döndürebildiği için tipi
@@ -255,7 +256,7 @@ akıştaki her kullanımı etkiliyor. Güvenlik ücretsiz değil.
 ## 16. `typing.Callable` ve arkadaşları eskidi
 
 ```python
-from typing import Callable, Iterable, Iterator      # eski
+from typing import Callable, Iterable, Iterator  # eski
 from collections.abc import Callable, Iterable, Iterator  # ✓
 ```
 
@@ -273,9 +274,12 @@ de öneriyor (Python 3.12+).
 ```python
 def renk_kodu(renk: Renk) -> str:
     match renk:
-        case "kirmizi": return "#FF0000"
-        case "yesil":   return "#00FF00"
-        case "mavi":    return "#0000FF"
+        case "kirmizi":
+            return "#FF0000"
+        case "yesil":
+            return "#00FF00"
+        case "mavi":
+            return "#0000FF"
     # case _ yok → örtük None
 ```
 
@@ -291,9 +295,9 @@ mypy'nin **derleme zamanında** uyarmasını sağlıyor.
 ## 18. Python Türkçe büyük/küçük harf kurallarını bilmiyor
 
 ```python
-"İ".lower()   # → 'i̇'  (i + birleşen nokta: İKİ karakter)
-"I".lower()   # → 'i'   (Türkçede 'ı' olmalıydı)
-"ı".upper()   # → 'I'   (Türkçede 'I' doğru ama İ/I ayrımı kayıp)
+"İ".lower()  # → 'i̇'  (i + birleşen nokta: İKİ karakter)
+"I".lower()  # → 'i'   (Türkçede 'ı' olmalıydı)
+"ı".upper()  # → 'I'   (Türkçede 'I' doğru ama İ/I ayrımı kayıp)
 ```
 
 **Neden:** `str.lower()` Unicode'un dil-bağımsız kurallarını uyguluyor; Türkçenin
@@ -309,7 +313,7 @@ Bu hafta ünlü sayma egzersizinde sonucu bozmadı ama sessiz hata kaynağı.
 
 ```python
 for k, g in groupby(items, key=anahtar):
-    yield k, list(g)      # list() ŞART
+    yield k, list(g)  # list() ŞART
 ```
 
 **Neden:** `groupby` grup nesnesini tembel döndürüyor ve bir sonraki gruba
@@ -323,7 +327,7 @@ Aynı mantık generator'lar için de geçerli (madde 10).
 ## 20. `str.isdigit()` negatif sayıyı yakalamıyor
 
 ```python
-"-5".isdigit()   # False
+"-5".isdigit()  # False
 ```
 
 **Neden:** `isdigit` yalnızca rakam karakterlerine bakıyor; eksi işareti rakam değil.
