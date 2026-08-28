@@ -31,7 +31,7 @@ def ekle(x, liste=None):
 
 ```python
 a = [[0] * 3] * 3
-a[0][0] = 1   # → [[1,0,0], [1,0,0], [1,0,0]]
+a[0][0] = 1  # → [[1,0,0], [1,0,0], [1,0,0]]
 ```
 
 **Neden:** `* 3` aynı iç listeye **üç referans** üretiyor, üç ayrı liste değil.
@@ -43,8 +43,10 @@ a[0][0] = 1   # → [[1,0,0], [1,0,0], [1,0,0]]
 ## 3. `is` vs `==` ve sayı önbelleği
 
 ```python
-x = 256; y = 256   # x is y → True
-p = 257; q = 257   # dosyada True, REPL'de False
+x = 256
+y = 256  # x is y → True
+p = 257
+q = 257  # dosyada True, REPL'de False
 ```
 
 **Neden:** CPython −5..256 arası tam sayıları önbellekte tutar. 257 önbellek dışında; ama
@@ -59,7 +61,7 @@ ve "gerçekten aynı nesne mi" sorusu için.
 ## 4. `copy` yüzeysel, `deepcopy` derin
 
 ```python
-s = copy.copy(orj)      # iç listeler PAYLAŞILIR
+s = copy.copy(orj)  # iç listeler PAYLAŞILIR
 d = copy.deepcopy(orj)  # iç listeler de kopyalanır
 ```
 
@@ -72,7 +74,7 @@ d = copy.deepcopy(orj)  # iç listeler de kopyalanır
 
 ```python
 t = (1, [2, 3])
-t[1].append(4)   # → (1, [2, 3, 4])
+t[1].append(4)  # → (1, [2, 3, 4])
 ```
 
 **Neden:** Tuple **kendi elemanlarına olan referansları** dondurur, o nesnelerin içeriğini değil.
@@ -85,7 +87,7 @@ t[1].append(4)   # → (1, [2, 3, 4])
 
 ```python
 def temizle(liste):
-    liste = []      # sadece yerel adı yeniden bağlar
+    liste = []  # sadece yerel adı yeniden bağlar
     # liste.clear() olsaydı dışarıyı DEĞİŞTİRİRDİ
 ```
 
